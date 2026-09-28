@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Fly Track</title>
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fly Track">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+    <style>
+        *:focus { 
+            outline: none !important;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        :root {
+            --primary-color: #1e88e5;
+            --primary-container: #e3f2fd;
+            --primary-dark: #1565c0;
+            --primary-light: #bbdefb;
+            --primary-lighter: #90caf9;
+
+            --surface-bg: #ffffff;
+            --surface-hover: #f0f0f0;
+            --surface-pressed: #e0e0e0;
+            --surface-disabled: #f5f5f5;
+
+            --text-primary: #333333;
+            --text-secondary: #757575;
+            --text-disabled: #424242;
+
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 6px 12px rgba(0, 0, 0, 0.25);
+            --shadow-inset: inset 3px 3px 6px #bebebe, inset -3px -3px 6px #ffffff;
+
+            --border-radius: 12px;
+            --border-radius-lg: 20px;
+            --border-radius-full: 9999px;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; 
+            padding: 0;
+            background-color: var(--surface-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden; 
+            overscroll-behavior: none; 
+            height: 100vh; 
+        }
+        .container {
+            width: 100%; 
+            height: 100vh; 
+            margin: 0; 
+            padding: 0;
+            background: var(--surface-bg);
+            box-sizing: border-box; 
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .content-wrapper { 
+            max-width: 900px; 
+            width: 90%; 
+            margin: 0 auto; 
+            padding: 0 5%; 
+        }
+
+        h1 { 
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .input-wrapper {
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 0; 
+        }
+
+        .input-group {
+            text-align: left;
+        }
+
+        .coord-input-container {
+            display: flex;
+            align-items: stretch; 
+            width: 100%;
+            border-radius: var(--border-radius);
+            background-color: #f4f7f6; 
+            box-shadow: var(--shadow-inset);
+        }
+
+        input[type="number"], input[type="time"] { 
+            width: 100%;
+            padding: 12px 10px; 
+            border: none; 
+            border-radius: var(--border-radius);
+            box-sizing: border-box;
+            text-align: center;
+            background-color: #f4f7f6; 
+            box-shadow: var(--shadow-inset);
+            transition: box-shadow 0.3s ease-in-out;
+            font-size: 1em;
+            color: var(--text-primary);
+        }
+
+        .coord-input-container input[type="text"] { 
+            flex-grow: 1; 
+            padding: 12px 10px; 
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: var(--border-radius) 0 0 var(--border-radius);
+            background-color: #f4f7f6; 
+            box-shadow: var(--shadow-inset); 
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 1em;
+            color: var(--text-primary);
+            transition: box-shadow 0.3s ease-in-out, background-color 0.2s ease;
+        }
+
+        input[type="number"]:focus, input[type="time"]:focus, 
+        .coord-input-container input[type="text"]:focus {
+            outline: none; 
+            box-shadow: inset 0 0 0 2px var(--primary-color);
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            color: var(--text-primary);
+            font-size: 0.9em;
+        }
+
+        .input-valid {
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.25) inset;
+            background-color: #f6fff6;
+        }
+
+        .input-invalid {
+            box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.18) inset;
+            background-color: #fff6f6;
+        }
+
+        .input-feedback {
+            margin-top: 6px;
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            min-height: 1.2em;
+            text-align: left;
+        }
+
+        .input-feedback.error { color: #e53935; }
+        .input-feedback.ok { color: #2e7d32; }
+
+        .geo-btn {
+            background-color: var(--primary-container);
+            color: var(--primary-color);
+            border: none;
+            padding: 10px; 
+            border-radius: 0 var(--border-radius) var(--border-radius) 0;
+            cursor: pointer;
+            box-shadow: none; 
+            border-left: 1px solid rgba(0, 0, 0, 0.1); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            line-height: 1;
+        }
+
+        .geo-btn:hover {
+             background-color: var(--primary-light);
+        }
+
+        .geo-btn:active {
+            background-color: var(--primary-lighter);
+            box-shadow: none;
+        }
+
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+          font-size: 1.1em; 
+        }
+
+        .geo-btn .material-symbols-outlined {
+            color: var(--text-disabled);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #map-controls {
+            position: fixed;
+            bottom: 90px; 
+            right: 10px; 
+            z-index: 1000; 
+            display: flex;
+            flex-direction: column-reverse; 
+            gap: 12px;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #map-controls.hidden-controls {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .map-control-btn, .map-toggle-btn {
+            width: 48px; 
+            height: 48px; 
+            border-radius: 14px; 
+            border: none;
+            cursor: pointer;
+            font-size: 1.4em; 
+            line-height: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0;
+            background: rgba(255,255,255,0.85);
+            box-shadow: var(--shadow-md);
+            transition: all 0.2s ease;
+        }
+
+        .map-control-btn:hover, .map-toggle-btn:hover {
+            background: var(--surface-hover);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .map-control-btn:active, .map-toggle-btn:active {
+            background-color: var(--surface-pressed);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .map-control-btn:disabled, .map-toggle-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            background: var(--surface-disabled);
+            box-shadow: none;
+        }
+
+        .map-control-btn .material-symbols-outlined,
+        .map-toggle-btn .material-symbols-outlined {
+            color: var(--text-disabled);
+            font-size: 1.5em; 
+        }
+
+        .pill-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
+            padding: 4px;
+            border-radius: 999px;
+            background: rgba(12,12,12,0.62);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 10px 28px rgba(0,0,0,0.45), inset 4px 4px 14px rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .pill-controls .map-toggle-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.02);
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.55), inset -4px -4px 8px rgba(255,255,255,0.01), 0 6px 14px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: transform 0.14s ease, box-shadow 0.14s ease;
+        }
+        .pill-controls .map-toggle-btn .material-symbols-outlined { color: #fff; font-size: 1em; }
+        .pill-controls .map-toggle-btn:hover { transform: translateY(-3px); }
+
+        .map-control-btn.floating {
+            width: 38px;
+            height: 38px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.02);
+            color: #fff;
+            box-shadow: 0 10px 26px rgba(0,0,0,0.55), inset 6px 6px 16px rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.04);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .map-control-btn.floating:hover { box-shadow: 0 14px 34px rgba(0,0,0,0.6), inset 6px 6px 16px rgba(0,0,0,0.6); transform: translateY(-3px); } 
+        .map-control-btn.floating .material-symbols-outlined { font-size: 1.2em; color: #fff; }
+
+        .map-overlay-center {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 500; 
+            width: 80%; 
+            max-width: 80%;
+            padding: 20px;
+            border-radius: var(--border-radius-lg);
+            box-sizing: border-box;
+            text-align: center;
+            background: rgba(12,12,12,0.68);
+            color: #fff;
+            backdrop-filter: blur(1px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.6), inset 4px 4px 12px rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.03);
+            transition: opacity 0.3s ease, transform 0.18s ease;
+        }
+
+        .results p {
+            margin: 5px 0;
+        }
+        .results strong {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .map-overlay-center h2,
+        .map-overlay-center label,
+        .map-overlay-center p,
+        .map-overlay-center .input-feedback {
+            color: rgba(255,255,255,0.92);
+        }
+
+        .map-overlay-center input[type="number"],
+        .map-overlay-center input[type="time"],
+        .map-overlay-center input[type="number"],
+        .map-overlay-center input[type="time"],
+        .map-overlay-center .coord-input-container input[type="text"] {
+            background: rgba(255,255,255,0.04);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.04);
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.01);
+        }
+
+        .map-overlay-center .coord-input-container {
+            background: transparent;
+            box-shadow: none;
+            border: none;
+        }
+
+        .map-overlay-center .geo-btn {
+            background: rgba(255,255,255,0.03);
+            border-left: 1px solid rgba(255,255,255,0.02);
+            box-shadow: inset 2px 2px 6px rgba(0,0,0,0.6);
+        }
+        .map-overlay-center .geo-btn .material-symbols-outlined { color: rgba(255,255,255,0.85); }
+
+        .map-overlay-center .input-feedback.error { color: #ff8a80; }
+        .map-overlay-center .input-feedback.ok { color: #8cff9b; }
+
+        #status-container {
+            display: flex;
+            justify-content: center; 
+            align-items: center;
+            flex-wrap: wrap; 
+            position: absolute;
+            top: 10px; 
+            left: 0;
+            right: 0;
+            width: 100%; 
+            z-index: 1000; 
+            box-sizing: border-box; 
+            padding: 0 5%; 
+        }
+
+        #statusBox, #realSpeedBadge { 
+            display: block; 
+            width: fit-content; 
+            margin: 10px 8px; 
+            padding: 8px 15px; 
+            border-radius: var(--border-radius-full);
+            font-size: 1em; 
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px; 
+            transition: all 0.3s ease-in-out;
+            cursor: default;
+            text-align: center;
+            box-shadow: none; 
+        }
+
+        #realSpeedBadge {
+             text-transform: none; 
+        }
+
+        #statusBox.waiting, #realSpeedBadge.waiting { 
+            background-color: var(--surface-pressed);
+            color: var(--text-secondary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        #statusBox.live { 
+            background-color: #e53935; 
+            color: white;
+            box-shadow: 0 4px 8px rgba(229, 57, 53, 0.4); 
+        }
+
+        #realSpeedBadge.live {
+            background-color: #4CAF50; 
+            color: white;
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4); 
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        #statusBox.live.blinking {
+            animation: blink 1.2s infinite ease-in-out;
+        }
+
+        #map-wrapper {
+            width: 100%;
+            height: 100%; 
+            position: relative; 
+            margin: 0;
+            box-shadow: none;
+            background-color: #eee;
+            align-self: stretch;
+        }
+
+        #map {
+            position: absolute; 
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 100%; 
+            z-index: 1; 
+        }
+
+        .nav-icon {
+            width: 32px;
+            height: 32px;
+            display: block;
+            position: relative;
+            transition: transform 0.5s ease-out;
+        }
+        .nav-icon-background {
+            width: 100%;
+            height: 100%;
+            background-color: var(--surface-bg);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+        .nav-icon svg {
+            fill: #ff6600;
+            width: 60%;
+            height: 60%;
+            display: block;
+            transform: translateY(-3px);
+        }
+
+        @media (min-width: 450px) {
+            .input-wrapper {
+                grid-template-columns: 1fr 1fr; 
+            }
+            .input-wrapper.map-overlay-center .input-group:nth-child(1),
+            .input-wrapper.map-overlay-center .input-group:nth-child(2) { 
+                grid-column: span 2; 
+            }
+            .input-wrapper.map-overlay-center .input-group:nth-child(3) { 
+                grid-column: span 2; 
+            }
+        }
+
+        .simulations-panel {
+            width: 80%;
+            background: rgba(0, 0, 0, 0.7);
+            position: fixed;
+            bottom: 20px;
+            max-height: 90%;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            z-index: 999;
+            touch-action: none;
+            transform: translateX(-50%);
+            will-change: bottom,transform;
+            left: 50%; 
+            border-radius: 25px;
+            transition: transform 0.3s ease, transform 0.3s ease, max-height 0.3s ease;
+        }
+
+        .simulations-panel.collapsed {
+            background: rgba(0, 0, 0, 0.7);
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            border-radius: 25px;
+            height: auto;
+            z-index: 9999;
+        }
+
+        .simulations-panel.collapsed .simulations-handle {
+            width: 44px;
+            min-width: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            background: transparent;
+            z-index: 10001;
+        }
+
+        .simulations-panel.collapsed .simulations-collapsed-bar {
+            flex: 1;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            padding-left: 8px;
+        }
+
+        .simulations-panel.collapsed .simulations-collapsed-bar input {
+            width: 100%;
+            max-width: 100%;
+            border-radius: 25px;
+            background: rgba(0,0,0,0.2);
+            color: #222;
+            font-size: 18px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+            padding: 12px 18px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .simulations-panel.collapsed .collapsed-top {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .simulations-panel.collapsed .simulations-handle {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: grab;
+            background: transparent;
+        }
+
+        .simulations-panel.collapsed .simulations-collapsed-bar {
+            width: 100%;
+            padding: 0 12px 8px 12px;
+        }
+
+        .simulations-panel.collapsed .simulations-collapsed-bar input {
+            width: 80%;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #222;
+            padding: 10px 14px;
+            font-size: 12px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            cursor: pointer;
+        }
+
+        .simulations-panel.collapsed .simulations-search-bar,
+        .simulations-panel.collapsed .simulations-content {
+            display: none !important;
+        }
+
+        .simulations-panel.expanded .simulations-collapsed-bar,
+        .simulations-panel.open .simulations-collapsed-bar {
+            display: none !important;
+        }
+
+        .simulations-panel.expanded .simulations-search-bar,
+        .simulations-panel.open .simulations-search-bar {
+            display: flex !important;
+        }
+
+        .simulations-panel.expanded .simulations-content,
+        .simulations-panel.open .simulations-content {
+            display: flex !important;
+        }
+
+        .simulations-handle {
+            width: 100%;
+            height: 0;
+            padding: 7px;
+            background: transparent;
+            cursor: grab;
+            display: flex;
+            justify-content: center;
+            flex-shrink: 0;
+            touch-action: none;
+        }
+
+        .simulations-handle::before {
+            content: '';
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+        ;
+        }
+
+        .simulations-handle:active,
+        .simulations-handle:hover {
+            cursor: grabbing;
+        }
+
+        .simulations-handle:hover::before {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .simulations-content {
+            flex: 1;
+            padding: 0 20px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .simulations-panel.collapsed .simulations-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .simulations-content h3 {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            padding: 0;
+        }
+
+        .simulations-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            min-height: 60px;
+            overflow-y: auto;
+        }
+
+        .simulation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.01);
+        }
+
+        .simulation-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .simulation-item:active {
+            transform: scale(0.98);
+        }
+
+        .simulation-item-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .simulation-item-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .simulation-item-coords {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 8px;
+        }
+
+        .simulation-item-delete {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(255, 59, 48, 0.2);
+            color: #ff3b30;
+            border-radius: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            margin-left: 8px;
+        }
+
+        .simulation-item-edit {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(30,136,229,0.5);
+            color: #1e88e5;
+            border-radius: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.12s ease;
+            margin-left: 6px;
+        }
+
+        .simulation-item-edit:hover {
+            background: rgba(30,136,229,0.18);
+            transform: translateY(-2px);
+        }
+
+        .simulation-item-delete:hover {
+            background: rgba(255, 59, 48, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .simulation-item-delete:active {
+            transform: scale(0.9);
+        }
+
+        .simulations-save-section {
+            display: flex;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+        }
+
+        #simulationName {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 25px;
+            color: #fff;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            box-shadow: inset 4px 4px 10px rgba(0,0,0,0.6), inset -4px -4px 8px rgba(255,255,255,0.01);
+        }
+
+        #simulationName:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        #simulationName::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .save-simulation-btn {
+            padding: 12px 20px;
+            background: rgba(30, 136, 229, 0.9);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .save-simulation-btn:hover {
+            background: rgba(30, 136, 229, 1);
+            transform: translateY(-2px);
+        }
+
+        .save-simulation-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Modal styling improvements */
+        .save-modal.hidden { display: none !important; }
+        .save-modal-content {
+            width: 92%;
+            max-width: 420px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+        }
+        .save-modal h3 { margin:0 0 6px 0; color:#fff; font-size:16px; }
+        .save-modal input { width:90%; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03); color:#fff; }
+        .save-modal .save-modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+
+        .simulations-empty {
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            padding: 24px 16px;
+            font-size: 14px;
+        }
+
+        /* Improved style for the add button (expanded panel) */
+        .collapsed-add-btn {
+            --size: 48px;
+            width: var(--size);
+            height: var(--size);
+            padding: 0;
+            border-radius: 25px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03));
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
+            cursor: pointer;
+            transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+            font-size: 20px;
+        }
+        .collapsed-add-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 26px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+            background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+        }
+        .collapsed-add-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 6px 14px rgba(0,0,0,0.45) inset 0 1px 0 rgba(255,255,255,0.02);
+        }
+        .collapsed-add-btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(30,136,229,0.18), 0 8px 20px rgba(0,0,0,0.5);
+        }
+        .collapsed-add-btn .material-symbols-outlined { font-size: 22px; }
+
+        .simulations-search-bar {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 8px 0 0 0;
+            background: transparent;
+            z-index: 1001;
+        }
+        .simulations-search-bar input {
+            width: 80%;
+            max-width: 80%;
+            padding: 10px 16px;
+            border-radius: 25px;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            font-size: 12px;
+            transition: box-shadow 0.2s;
+            box-shadow: inset 2px 2px 8px rgba(0,0,0,0.3);
+        }
+        .simulations-search-bar input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #1e88e5;
+            background: rgba(255,255,255,0.15);
+        }
+        .simulations-panel.collapsed .simulations-search-bar {
+            display: flex;
+            padding: 8px 0;
+        }
+        .simulations-panel.collapsed .simulations-content {
+            display: none;
+        }
+        .simulations-panel.expanded .simulations-search-bar,
+        .simulations-panel.open .simulations-search-bar {
+            display: flex;
+        }
+        .simulations-panel.expanded .simulations-content,
+        .simulations-panel.open .simulations-content {
+            display: flex;
+        }
+
+        /* Recuadro de simulación guardada: sustituye el panel inferior deslizable */
+        .saved-simulations-popup {
+            position: fixed;
+            right: 70px;
+            bottom: 90px;
+            width: min(320px, calc(100vw - 100px));
+            max-height: 60vh;
+            padding: 16px;
+            box-sizing: border-box;
+            border-radius: 22px;
+            background: rgba(12,12,12,0.76);
+            -webkit-backdrop-filter: blur(14px);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+            z-index: 1200;
+            color: #fff;
+        }
+        .saved-simulations-popup h3 { margin: 0 0 12px; font-size: 16px; }
+        .saved-simulations-popup .simulations-list { max-height: 42vh; overflow-y: auto; margin-bottom: 10px; }
+        .saved-simulations-popup .collapsed-add-btn { margin: 4px auto 0; }
+    
+/* ===== Fly Track · Liquid Glass UI ===== */
+:root { --glass-bg: rgba(18,18,20,.28); --glass-border: rgba(255,255,255,.20); --glass-highlight: rgba(255,255,255,.12); }
+#map-controls { right: 14px; bottom: calc(18px + env(safe-area-inset-bottom)); }
+.pill-controls { gap: 7px; align-items: stretch; padding: 7px; border-radius: 24px; background: rgba(20,20,22,.24); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border: 1px solid rgba(255,255,255,.20); box-shadow: 0 12px 36px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.18); }
+.pill-controls .map-toggle-btn, .map-control-btn.floating { width: auto; min-width: 112px; height: 46px; padding: 0 14px; gap: 8px; border-radius: 17px; justify-content: flex-start; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.11); box-shadow: inset 0 1px 0 rgba(255,255,255,.10); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); transform: none; }
+.pill-controls .map-toggle-btn:hover, .map-control-btn.floating:hover { transform:none; background:rgba(255,255,255,.15); box-shadow:inset 0 1px 0 rgba(255,255,255,.16); }
+.pill-controls .primary-action { background: rgba(255,255,255,.88); border-color: rgba(255,255,255,.55); }
+.pill-controls .primary-action .material-symbols-outlined, .pill-controls .primary-action .control-label { color:#111; }
+.pill-controls .map-toggle-btn .material-symbols-outlined, .map-control-btn.floating .material-symbols-outlined { font-size:20px; }
+.control-label { color:#fff; font-size:13px; font-weight:650; letter-spacing:-.01em; white-space:nowrap; }
+.map-control-btn:disabled { opacity:.42; }
+.flight-summary { position:absolute; z-index:800; top:calc(14px + env(safe-area-inset-top)); left:14px; max-width:calc(100% - 28px); min-width:220px; padding:13px 15px 12px; border-radius:21px; color:#fff; text-align:left; background:rgba(18,18,20,.26); border:1px solid rgba(255,255,255,.20); box-shadow:0 12px 34px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.16); -webkit-backdrop-filter:blur(24px) saturate(180%); backdrop-filter:blur(24px) saturate(180%); }
+.flight-summary-top { display:flex; align-items:center; gap:7px; font-size:12px; font-weight:650; color:rgba(255,255,255,.78); }
+.flight-state-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,.45); box-shadow:0 0 0 4px rgba(255,255,255,.06); }
+.flight-summary.live .flight-state-dot { background:#45e06f; box-shadow:0 0 0 4px rgba(69,224,111,.14); }
+.flight-summary.ready .flight-state-dot { background:#69a9ff; box-shadow:0 0 0 4px rgba(105,169,255,.14); }
+.flight-summary-main { display:flex; align-items:baseline; gap:7px; margin-top:5px; font-size:14px; color:rgba(255,255,255,.78); }
+.flight-summary-main strong { font-size:20px; color:#fff; letter-spacing:-.03em; }
+.flight-separator { opacity:.4; }
+.flight-hint { margin-top:2px; font-size:11px; color:rgba(255,255,255,.56); }
+#status-container { top:calc(106px + env(safe-area-inset-top)); justify-content:flex-start; padding-left:14px; }
+#statusBox, #realSpeedBadge { margin:3px 5px 3px 0; padding:6px 10px; font-size:11px; background:rgba(20,20,22,.30)!important; border:1px solid rgba(255,255,255,.16); -webkit-backdrop-filter:blur(18px) saturate(160%); backdrop-filter:blur(18px) saturate(160%); box-shadow:0 7px 18px rgba(0,0,0,.15)!important; }
+#statusBox.live { color:#ff6b6b; } #realSpeedBadge.live { color:#6cf08a; }
+.map-overlay-center { top:50%; width:calc(100% - 28px); max-width:460px; max-height:calc(100% - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); overflow:auto; padding:18px; border-radius:28px; background:rgba(18,18,20,.30); border:1px solid rgba(255,255,255,.22); box-shadow:0 22px 60px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.16); -webkit-backdrop-filter:blur(28px) saturate(180%); backdrop-filter:blur(28px) saturate(180%); }
+.glass-panel-header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:16px; text-align:left; }
+.glass-panel-header h2 { margin:2px 0 0; font-size:23px; letter-spacing:-.035em; color:#fff; }
+.eyebrow { font-size:10px; font-weight:750; letter-spacing:.12em; color:rgba(255,255,255,.48); }
+.glass-close { flex:0 0 38px; width:38px; height:38px; border:1px solid rgba(255,255,255,.12); border-radius:50%; background:rgba(255,255,255,.09); color:#fff; display:flex; align-items:center; justify-content:center; }
+.glass-close .material-symbols-outlined { font-size:19px; }
+.map-overlay-center label { margin:0 0 6px; font-size:12px; font-weight:600; color:rgba(255,255,255,.66); }
+.map-overlay-center .input-group { margin-bottom:12px; }
+.map-overlay-center input[type="number"], .map-overlay-center input[type="time"], .map-overlay-center .coord-input-container input[type="text"] { min-height:48px; border-radius:15px; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.13); box-shadow:inset 0 1px 0 rgba(255,255,255,.08); font-size:16px; }
+.map-overlay-center .coord-input-container input[type="text"] { border-radius:15px 0 0 15px; }
+.map-overlay-center .geo-btn { min-width:48px; border-radius:0 15px 15px 0; background:rgba(255,255,255,.12); border-left:1px solid rgba(255,255,255,.12); box-shadow:none; }
+.save-actions-row .save-simulation-btn { min-height:46px; padding:0 18px; border-radius:15px; border:1px solid rgba(255,255,255,.14); font-size:14px; font-weight:650; }
+#configApplyBtn { background:rgba(255,255,255,.90); color:#111; } #configCancelBtn { background:rgba(255,255,255,.09); color:#fff; }
+.results p { display:flex; justify-content:space-between; gap:18px; padding:11px 0; margin:0; border-bottom:1px solid rgba(255,255,255,.09); text-align:left; color:rgba(255,255,255,.65); font-size:13px; }
+.results p:last-child { border-bottom:0; } .results strong { color:#fff; font-size:14px; text-align:right; }
+@media (max-width: 430px) { .pill-controls .map-toggle-btn, .map-control-btn.floating { min-width:104px; height:44px; padding:0 12px; } .control-label{font-size:12px;} .flight-summary{min-width:0;} }
+
+
+/* ===== v4.1 · Layout despejado + Bottom Sheets ===== */
+#map-controls{left:14px!important;right:14px!important;bottom:calc(14px + env(safe-area-inset-bottom))!important;width:auto!important;display:flex!important;justify-content:center!important;z-index:1100!important;}
+.pill-controls{width:min(520px,100%);display:grid!important;grid-template-columns:1.25fr 1fr 1fr;gap:6px!important;padding:6px!important;border-radius:24px!important;background:rgba(24,24,27,.22)!important;-webkit-backdrop-filter:blur(28px) saturate(190%)!important;backdrop-filter:blur(28px) saturate(190%)!important;}
+.pill-controls .map-toggle-btn,.pill-controls .map-control-btn.floating{min-width:0!important;width:100%!important;height:48px!important;padding:0 10px!important;border-radius:18px!important;justify-content:center!important;gap:6px!important;}
+.control-label{font-size:12px!important;}
+.flight-summary{top:calc(10px + env(safe-area-inset-top))!important;left:12px!important;right:auto!important;width:auto!important;max-width:calc(100% - 24px)!important;min-width:0!important;padding:10px 13px!important;border-radius:18px!important;background:rgba(22,22,24,.20)!important;-webkit-backdrop-filter:blur(24px) saturate(185%)!important;backdrop-filter:blur(24px) saturate(185%)!important;}
+.flight-summary-top{font-size:11px!important;}
+.flight-summary-main{margin-top:3px!important;font-size:12px!important;}
+.flight-summary-main strong{font-size:18px!important;}
+.flight-hint{display:none!important;}
+#status-container{top:calc(82px + env(safe-area-inset-top))!important;left:12px!important;padding-left:0!important;}
+
+/* Los paneles dejan de flotar en el centro: hoja inferior estilo iOS */
+.map-overlay-center{position:absolute!important;left:10px!important;right:10px!important;bottom:calc(78px + env(safe-area-inset-bottom))!important;top:auto!important;transform:none!important;width:auto!important;max-width:none!important;max-height:min(70%,620px)!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;padding:16px 16px 18px!important;border-radius:30px!important;background:rgba(28,28,30,.32)!important;border:1px solid rgba(255,255,255,.24)!important;box-shadow:0 18px 55px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18)!important;-webkit-backdrop-filter:blur(32px) saturate(190%)!important;backdrop-filter:blur(32px) saturate(190%)!important;z-index:1050!important;}
+.map-overlay-center::before{content:'';display:block;width:38px;height:5px;border-radius:99px;background:rgba(255,255,255,.35);margin:0 auto 10px;}
+.glass-panel-header{margin-bottom:12px!important;align-items:center!important;}
+.glass-panel-header h2{font-size:21px!important;}
+.eyebrow{display:none!important;}
+.glass-close{width:36px!important;height:36px!important;flex-basis:36px!important;}
+.map-overlay-center .input-group{margin-bottom:10px!important;}
+.map-overlay-center label{font-size:12px!important;margin-bottom:5px!important;}
+.map-overlay-center input[type=number],.map-overlay-center input[type=time],.map-overlay-center .coord-input-container input[type=text]{min-height:46px!important;}
+#input-wrapper .compact-config-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#input-wrapper .compact-config-row .input-group{min-width:0;}
+#input-wrapper .distance-chip{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0 10px;border-radius:15px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);}
+#input-wrapper .distance-chip label{margin:0!important;}
+#input-wrapper .distance-chip input{width:110px!important;min-height:0!important;height:auto!important;padding:0!important;border:0!important;background:transparent!important;text-align:right!important;font-weight:700!important;}
+.save-actions-row{display:grid!important;grid-template-columns:1.4fr 1fr!important;gap:8px!important;margin-top:12px!important;}
+.save-actions-row .save-simulation-btn{width:100%!important;min-width:0!important;}
+.results p{padding:10px 0!important;}
+@media(max-width:390px){.pill-controls{grid-template-columns:1.2fr .9fr .9fr}.pill-controls .material-symbols-outlined{font-size:18px!important}.control-label{font-size:11px!important}.map-overlay-center{left:8px!important;right:8px!important;padding:14px!important}.flight-summary-main strong{font-size:17px!important;}}
+
+
+/* ===== v4.2 · Bottom sheets safe-area + proportions ===== */
+:root{--controls-safe-height:76px;}
+.map-overlay-center{
+  bottom:calc(var(--controls-safe-height) + 18px + env(safe-area-inset-bottom))!important;
+  max-height:calc(100% - 128px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;
+  padding-bottom:22px!important;
+  overscroll-behavior:contain;
+}
+#input-wrapper .compact-config-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:12px!important;align-items:start!important;}
+#input-wrapper .compact-config-row .input-group{width:100%!important;min-width:0!important;margin-bottom:0!important;}
+#input-wrapper .compact-config-row label{height:18px;display:flex;align-items:flex-end;white-space:nowrap;}
+#input-wrapper .compact-config-row input{display:block;width:100%!important;min-width:0!important;height:52px!important;min-height:52px!important;padding:0 12px!important;box-sizing:border-box!important;border-radius:17px!important;}
+.save-actions-row{grid-template-columns:1fr 1fr!important;margin-top:16px!important;padding-bottom:2px!important;}
+.save-actions-row .save-simulation-btn{height:48px!important;min-height:48px!important;}
+#results{padding-bottom:24px!important;}
+#results p:last-child{padding-bottom:4px!important;}
+@media(max-height:700px){.map-overlay-center{max-height:calc(100% - 112px - env(safe-area-inset-top) - env(safe-area-inset-bottom))!important;}.map-overlay-center .input-group{margin-bottom:8px!important;}}
+
+/* ===== v4.3 · Centrado barra + hora iOS ===== */
+#map-controls{
+  left:0!important;
+  right:0!important;
+  width:100%!important;
+  padding-left:14px!important;
+  padding-right:14px!important;
+  box-sizing:border-box!important;
+  justify-content:center!important;
+}
+.pill-controls{
+  width:min(520px,100%)!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  box-sizing:border-box!important;
+}
+#horaInicio{
+  width:100%!important;
+  padding-left:0!important;
+  padding-right:0!important;
+  text-align:center!important;
+  text-align-last:center!important;
+  -webkit-appearance:none;
+  appearance:none;
+}
+#horaInicio::-webkit-date-and-time-value{
+  width:100%!important;
+  min-width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  text-align:center!important;
+}
+#horaInicio::-webkit-datetime-edit{
+  display:flex!important;
+  width:100%!important;
+  justify-content:center!important;
+  align-items:center!important;
+  padding:0!important;
+}
+#horaInicio::-webkit-datetime-edit-fields-wrapper{
+  display:flex!important;
+  justify-content:center!important;
+  align-items:center!important;
+}
+
+
+/* ===== v4.4 · Estado superior simplificado ===== */
+/* Oculta la tarjeta redundante de estado/distancia/velocidad configurada. */
+#flightSummary { display: none !important; }
+
+/* LIVE + velocidad real: una sola fila, centrada y más legible. */
+#status-container {
+    position: absolute !important;
+    top: calc(16px + env(safe-area-inset-top)) !important;
+    left: 50% !important;
+    right: auto !important;
+    width: auto !important;
+    max-width: calc(100% - 28px) !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    z-index: 1000 !important;
+    pointer-events: none;
+}
+#statusBox, #realSpeedBadge {
+    margin: 0 !important;
+    min-height: 48px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 18px !important;
+    border-radius: 999px !important;
+    font-size: 15px !important;
+    font-weight: 750 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    background: rgba(24,24,27,.25) !important;
+    border: 1px solid rgba(255,255,255,.22) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.20), inset 0 1px 0 rgba(255,255,255,.17) !important;
+    -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+    backdrop-filter: blur(26px) saturate(190%) !important;
+}
+#statusBox { min-width: 76px !important; letter-spacing: .08em !important; }
+#realSpeedBadge { min-width: 170px !important; letter-spacing: .02em !important; }
+#statusBox.live { color: #ff6b6b !important; }
+#realSpeedBadge.live { color: #6cf08a !important; }
+#statusBox.hidden, #realSpeedBadge.hidden { display: none !important; }
+@media (max-width: 390px) {
+    #status-container { gap: 6px !important; max-width: calc(100% - 20px) !important; }
+    #statusBox, #realSpeedBadge { min-height: 46px !important; padding: 0 14px !important; font-size: 14px !important; }
+    #statusBox { min-width: 70px !important; }
+    #realSpeedBadge { min-width: 158px !important; }
+}
+
+/* ===== v4.5 · Alineación hora + distancia recorrida ===== */
+/* iOS reserva espacio visual para el control nativo del input time.
+   Compensamos ese espacio para centrar la hora ópticamente. */
+#horaInicio{
+  position:relative!important;
+  text-indent:-18px!important;
+}
+#horaInicio::-webkit-date-and-time-value{
+  transform:translateX(-9px)!important;
+}
+
+/* En Detalles, la distancia conserva valor + unidad juntos y alineados a la derecha. */
+#results p:last-child{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) auto auto!important;
+  align-items:center!important;
+  column-gap:6px!important;
+}
+#results p:last-child strong{
+  text-align:right!important;
+  min-width:64px!important;
+}
+#results p:last-child strong + *{
+  text-align:left!important;
+}
+
+</style>
+</head>
+<body onload="initApp();">
+
+<div class="container">
+
+    <div class="content-wrapper"> 
+    </div>
+
+    <div id="map-wrapper">
+        <div id="map"></div> 
+
+        <div id="status-container"> 
+            <div id="statusBox" class="waiting hidden" role="status" aria-live="polite" aria-label="Estado de la simulación">ESPERANDO DATOS...</div> 
+            <div id="realSpeedBadge" class="waiting hidden" role="status" aria-live="polite" aria-label="Velocidad actual en metros por minuto">0.00 m/min</div> 
+        </div>
+
+        <div id="flightSummary" class="flight-summary" aria-live="polite">
+            <div class="flight-summary-top">
+                <span id="flightStateDot" class="flight-state-dot"></span>
+                <span id="flightStateText">Configura tu vuelo</span>
+            </div>
+            <div class="flight-summary-main">
+                <strong id="flightDistance">— km</strong>
+                <span class="flight-separator">•</span>
+                <span id="flightSpeed">— m/min</span>
+            </div>
+            <div id="flightHint" class="flight-hint">Toca Configurar para comenzar</div>
+        </div>
+
+        <div id="map-controls">
+            <div class="pill-controls" role="group" aria-label="Controles de vuelo">
+                <button id="controlSimulationBtn" class="map-control-btn floating primary-action" onclick="toggleSimulation()" aria-label="Iniciar simulación">
+                    <span class="material-symbols-outlined" aria-hidden="true">play_arrow</span><span class="control-label">Iniciar</span>
+                </button>
+                <button id="toggleResults" class="map-toggle-btn" onclick="toggleSection('results')" aria-label="Ver detalles">
+                    <span class="material-symbols-outlined" aria-hidden="true">bar_chart</span><span class="control-label">Detalles</span>
+                </button>
+                <button id="toggleConfig" class="map-toggle-btn" onclick="toggleSection('input-wrapper')" title="Configurar simulación" aria-label="Configurar simulación">
+                    <span class="material-symbols-outlined" aria-hidden="true">tune</span><span class="control-label">Configurar</span>
+                </button>
+            </div>
+
+
+
+        </div>
+
+        <div class="input-wrapper map-overlay-center hidden" id="input-wrapper" role="region" aria-label="Panel de configuración">
+                <div class="glass-panel-header"><div><span class="eyebrow">FLY TRACK</span><h2>Configurar vuelo</h2></div><button type="button" class="glass-close" onclick="toggleSection('input-wrapper')" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+                <div class="input-group" id="save-from-config">
+            <div class="input-group">
+                <label for="coordsA">Coordenadas Punto de Suelta:</label>
+                <div class="coord-input-container">
+                    <input type="text" id="coordsA" value="20.663982, -102.570220" oninput="handleInputChanges(event)" aria-label="Coordenadas del punto de suelta">
+                    <button class="geo-btn" onclick="getLocation('coordsA')">
+                        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="coordsB">Coordenadas Palomar:</label>
+                <div class="coord-input-container">
+                    <input type="text" id="coordsB" value="20.663982, -102.570220" oninput="handleInputChanges(event)" aria-label="Coordenadas del palomar">
+                    <button class="geo-btn" onclick="getLocation('coordsB')">
+                        <span class="material-symbols-outlined" aria-hidden="true">location_on</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="distance-chip">
+                <label for="distancia">Distancia</label>
+                <input type="number" id="distancia" value="0" min="0" readonly aria-label="Distancia calculada en kilómetros"><span style="font-size:12px;color:rgba(255,255,255,.58);margin-left:4px">km</span>
+            </div>
+
+            <div class="compact-config-row">
+                <div class="input-group">
+                    <label for="velocidad">Velocidad m/min</label>
+                    <input type="number" id="velocidad" value="1350" min="1" oninput="handleInputChanges(event)" aria-label="Velocidad deseada en metros por minuto">
+                </div>
+                <div class="input-group">
+                    <label for="horaInicio">Hora de suelta</label>
+                    <input type="time" id="horaInicio" value="08:00" onchange="handleInputChanges()" aria-label="Hora de suelta">
+                </div>
+            </div>
+
+            <div class="save-actions-row" style="display:flex; gap:10px; margin-top:10px; justify-content:center;">
+                    <button id="configApplyBtn" class="save-simulation-btn" type="button">Guardar</button>
+                    <button id="configCancelBtn" class="save-simulation-btn" type="button">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="results map-overlay-center hidden" id="results" role="region" aria-label="Panel de resultados">
+            <div class="glass-panel-header"><div><span class="eyebrow">SIMULACIÓN</span><h2>Detalles del vuelo</h2></div><button type="button" class="glass-close" onclick="toggleSection('results')" aria-label="Cerrar"><span class="material-symbols-outlined">close</span></button></div>
+            <p>Tiempo total estimado: <strong id="tiempoTotal" aria-label="Tiempo total estimado">00:00:00</strong></p>
+            <p>Hora de llegada estimada: <strong id="horaLlegada" aria-label="Hora de llegada estimada">--:--</strong></p>
+            <p>Tiempo transcurrido: <strong id="tiempoActual" aria-label="Tiempo transcurrido">00:00:00</strong></p>
+            <p>Distancia recorrida: <strong id="distanciaRecorrida" aria-label="Distancia recorrida en kilómetros">0</strong> km</p>
+        </div>
+
+
+
+
+    </div>
+
+</div>
+
+<script>
+    // ================================================================
+    // CONSTANTES GLOBALES
+    // ================================================================
+    const CONFIG = {
+        EARTH_RADIUS_KM: 6371,
+        SPEED_STOP_THRESHOLD: 500, // m/min
+        MIN_SPEED: 1,
+        Z_INDEX_CONTROLS: 1000,
+        Z_INDEX_OVERLAY: 500,
+        MAP_ZOOM: 12,
+        UPDATE_INTERVAL: 1000,
+        ANIMATION_DURATION_MS: 300,
+        MAP_PAN_DURATION_MS: 1000,
+        MATERIAL_ICON_SIZE: 24
+    };
+
+    // Helper seguro para asignar textContent evitando errores si el elemento no existe
+    function safeSetTextById(id, text) {
+        try {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        } catch (e) {}
+    }
+
+    // Variables globales
+    let hasLoadedSimulation = false;
+    let intervalId = null;
+    let tiempoTranscurrido = 0;
+    let tiempoTotalSegundos = 0;
+    let distanciaTotalKm = 0;
+    let horaLlegadaObj = null;
+    let horaInicioObj = null;
+    let puntoA_Coords = null;
+    let puntoB_Coords = null;
+    let currentBearing = 0;
+
+    // Variables de Leaflet
+    let map = null;
+    let polylineBorder = null;
+    let polyline = null;
+    let airplaneMarker = null;
+    let usePositionSimulation = true;
+
+    // Para panel de simulaciones (dragging)
+    let isPanelDragging = false;
+    let panelStartY = 0;
+    let panelCurrentY = 0;
+    let panelVelocity = 0;
+    let panelStartTop = 0;
+    let panelLastY = 0;
+
+    // ICONO DE NAVEGACIÓN
+    const NavIcon = L ? L.divIcon({
+        className: 'custom-icon',
+        html: `
+            <div class="nav-icon">
+                <div class="nav-icon-background">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <polygon points="50,0 100,100 50,80 0,100" />
+                    </svg>
+                </div>
+            </div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+    }) : null;
+
+    // ================================================================
+    // UTILIDADES: Gestión de UI (Badges y Botones)
+    // ================================================================
+    function updateUIState(state) {
+        const statusBox = document.getElementById('statusBox');
+        const speedBadge = document.getElementById('realSpeedBadge');
+        const controlBtn = document.getElementById('controlSimulationBtn');
+        const inputElements = document.querySelectorAll('.input-wrapper input, .input-wrapper button.geo-btn');
+
+        // Si uno de los elementos principales no existe, salir sin intentar manipularlos
+        if (!statusBox || !speedBadge || !controlBtn) return;
+
+        updateFlightSummary(state);
+
+        switch(state) {
+            case 'waiting':
+                statusBox.classList.remove('live', 'blinking');
+                statusBox.classList.add('waiting', 'hidden');
+                statusBox.textContent = 'ESPERANDO DATOS...';
+
+                speedBadge.classList.remove('live');
+                speedBadge.classList.add('waiting', 'hidden');
+                speedBadge.textContent = '0.00 m/min';
+
+                controlBtn.disabled = true;
+                controlBtn.title = 'Datos inválidos';
+                controlBtn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span><span class="control-label">Iniciar</span>'; controlBtn.setAttribute('aria-label','Iniciar simulación');
+
+                inputElements.forEach(el => el.disabled = false);
+                break;
+
+            case 'live':
+                statusBox.classList.remove('waiting', 'hidden');
+                statusBox.classList.add('live', 'blinking');
+                statusBox.textContent = 'LIVE';
+
+                speedBadge.classList.remove('waiting', 'hidden');
+                speedBadge.classList.add('live');
+
+                controlBtn.disabled = false;
+                controlBtn.innerHTML = '<span class="material-symbols-outlined">stop</span><span class="control-label">Detener</span>'; controlBtn.setAttribute('aria-label','Detener simulación');
+
+                inputElements.forEach(el => {
+                    if (el.id === 'velocidad') {
+                        el.disabled = false;
+                    } else {
+                        el.disabled = true;
+                    }
+                });
+                break;
+
+            case 'stopped':
+                statusBox.classList.add('hidden');
+                statusBox.classList.remove('live', 'blinking', 'waiting');
+
+                speedBadge.classList.add('hidden');
+                speedBadge.classList.remove('live', 'waiting');
+
+                controlBtn.disabled = false;
+                controlBtn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span><span class="control-label">Iniciar</span>'; controlBtn.setAttribute('aria-label','Iniciar simulación');
+
+                inputElements.forEach(el => el.disabled = false);
+                break;
+
+            case 'ready':
+                statusBox.classList.remove('live', 'blinking');
+                statusBox.classList.add('waiting', 'hidden');
+
+                speedBadge.classList.remove('live');
+                speedBadge.classList.add('waiting', 'hidden');
+
+                controlBtn.disabled = false;
+                controlBtn.innerHTML = '<span class="material-symbols-outlined">play_arrow</span><span class="control-label">Iniciar</span>'; controlBtn.setAttribute('aria-label','Iniciar simulación');
+
+                inputElements.forEach(el => el.disabled = false);
+                break;
+        }
+    }
+
+    function updateFlightSummary(state) {
+        const card = document.getElementById('flightSummary');
+        if (!card) return;
+        card.classList.remove('live','ready');
+        if (state === 'live') card.classList.add('live');
+        else if (state === 'ready' || state === 'stopped') card.classList.add('ready');
+        const d = parseFloat(document.getElementById('distancia')?.value || 0);
+        const v = parseFloat(document.getElementById('velocidad')?.value || 0);
+        safeSetTextById('flightDistance', d > 0 ? `${d.toFixed(3)} km` : '— km');
+        safeSetTextById('flightSpeed', v > 0 ? `${Math.round(v)} m/min` : '— m/min');
+        const labels = { waiting:'Configura tu vuelo', ready:'Listo para iniciar', stopped:'Listo para iniciar', live:'En vuelo' };
+        const hints = { waiting:'Toca Configurar para comenzar', ready:'Toca Iniciar cuando quieras comenzar', stopped:'Toca Iniciar para repetir la simulación', live:'La posición se actualiza con el tiempo real' };
+        safeSetTextById('flightStateText', labels[state] || labels.waiting);
+        safeSetTextById('flightHint', hints[state] || hints.waiting);
+    }
+
+    // Cargar una simulación en el panel de configuración para edición
+    function editSimulation(id) {
+        const simulations = JSON.parse(localStorage.getItem('flytrack_simulations') || '[]');
+        const simulation = simulations.find(s => s.id === id);
+        if (!simulation) return;
+
+        // Poner valores en el panel de configuración
+        try { document.getElementById('coordsA').value = simulation.coordsA; } catch (e) {}
+        try { document.getElementById('coordsB').value = simulation.coordsB; } catch (e) {}
+        try { document.getElementById('simulationName').value = simulation.name; } catch (e) {}
+
+        // Marcar el id que estamos editando
+        try { document.getElementById('editingSimulationId').value = simulation.id; } catch (e) {}
+        try { const cs = document.getElementById('configSaveBtn'); if (cs) cs.textContent = 'Actualizar'; } catch (e) {}
+
+        // Abrir panel de configuración y enfocar el nombre
+        try { openInputWrapperForSave(); } catch (e) {}
+        setTimeout(() => { try { document.getElementById('simulationName').focus(); } catch (e) {} }, 200);
+    }
+
+    // ---------------------------------------------------
+    // Toggle de secciones
+    // ---------------------------------------------------
+    function toggleSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    const isHidden = section.classList.contains('hidden');
+
+    const otherSectionId = sectionId === 'input-wrapper' ? 'results' : 'input-wrapper';
+    const otherSection = document.getElementById(otherSectionId);
+
+    // Cerrar la otra sección si está abierta
+    if (otherSection && !otherSection.classList.contains('hidden')) {
+        otherSection.classList.add('hidden');
+        localStorage.removeItem(`toggle_state_${otherSectionId}`);
+    }
+
+    // Mostrar/ocultar la sección seleccionada
+    if (isHidden) section.classList.remove('hidden');
+    else section.classList.add('hidden');
+
+    localStorage.setItem(`toggle_state_${sectionId}`, !isHidden);
+}
+
+    // ================================================================
+    // INICIALIZACIÓN
+    // ================================================================
+    function initApp() {
+        try {
+            loadData();
+
+            const inputSection = document.getElementById('input-wrapper');
+            const resultsSection = document.getElementById('results');
+
+            if (!inputSection || !resultsSection) {
+                console.error("Error: Elementos del DOM no encontrados");
+                return;
+            }
+
+            const coordsAStr = document.getElementById('coordsA').value;
+            const puntoA = parseCoordinates(coordsAStr);
+
+            const defaultLat = 40.416775;
+            const defaultLon = -3.703790;
+
+            initializeMap(puntoA ? puntoA.lat : defaultLat, puntoA ? puntoA.lon : defaultLon);
+            calcularDistanciaCoordenadas();
+            if (localStorage.getItem('flytrack_configured') === 'true') {
+                const savedA = parseCoordinates(document.getElementById('coordsA').value);
+                const savedB = parseCoordinates(document.getElementById('coordsB').value);
+                if (savedA && savedB) {
+                    puntoA_Coords = L.latLng(savedA.lat, savedA.lon);
+                    puntoB_Coords = L.latLng(savedB.lat, savedB.lon);
+                    usePositionSimulation = true;
+                    hasLoadedSimulation = true;
+                    calcularDistanciaCoordenadas();
+                    updateMap(savedA.lat, savedA.lon, savedB.lat, savedB.lon);
+                    updateUIState('ready');
+                }
+            }
+
+            handleInputChanges();
+
+
+            if (localStorage.getItem('sim_is_active') === 'true') {
+                const distanciaTotalKm = parseFloat(document.getElementById('distancia').value);
+                const velocidadMediaM_min = parseFloat(document.getElementById('velocidad').value);
+                const horaInicioStr = document.getElementById('horaInicio').value;
+
+                const isValid = distanciaTotalKm > 0 &&
+                                !isNaN(velocidadMediaM_min) &&
+                                velocidadMediaM_min > 0 &&
+                                horaInicioStr !== '' &&
+                                (!usePositionSimulation || (puntoA_Coords !== null && puntoB_Coords !== null));
+
+                if (isValid) {
+                    iniciarSimulacion();
+                } else {
+                    localStorage.setItem('sim_is_active', 'false');
+                }
+            }
+        } catch(error) {
+            console.error("Error al inicializar la aplicación:", error);
+            alert("Error al inicializar la aplicación. Por favor, recarga la página.");
+        }
+    }
+
+    // ================================================================
+    // GEOLOCALIZACIÓN
+    // ================================================================
+    function getLocation(inputId) {
+        // soportar event global
+        const evt = (typeof event !== 'undefined') ? event : (window.event || null);
+        const button = evt ? (evt.target.closest ? evt.target.closest('button') : null) : null;
+        const originalHTML = button ? button.innerHTML : '';
+
+        if (!navigator.geolocation) {
+            alert("Tu navegador no soporta la Geolocalización.");
+            return;
+        }
+
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="material-symbols-outlined" aria-hidden="true">hourglass_empty</span>';
+            button.title = 'Obteniendo ubicación...';
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                try {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+
+                    const inputElement = document.getElementById(inputId);
+                    if (inputElement) {
+                        inputElement.value = `${lat}, ${lon}`;
+                        handleInputChanges();
+                    }
+
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = originalHTML;
+                        button.title = 'Obtener ubicación actual';
+                    }
+                } catch(error) {
+                    console.error("Error al procesar la ubicación:", error);
+                    alert("Error al procesar la ubicación obtenida.");
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = originalHTML;
+                        button.title = 'Obtener ubicación actual';
+                    }
+                }
+            },
+            (error) => {
+                let errorMessage = 'Error: ';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        errorMessage += "No se pudo obtener tu ubicacion";
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        errorMessage += "La información de ubicación no está disponible.";
+                        break;
+                    case error.TIMEOUT:
+                        errorMessage += "La solicitud para obtener la ubicación ha caducado.";
+                        break;
+                    default:
+                        errorMessage += "Un error desconocido ha ocurrido.";
+                        break;
+                }
+                alert(errorMessage);
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHTML;
+                    button.title = 'Obtener ubicación actual';
+                }
+            }
+        );
+    }
+
+    // ================================================================
+    // ALMACENAMIENTO LOCAL BÁSICO
+    // ================================================================
+    function loadData() {
+        const dataMap = {
+            'coordsA': 'sim_coordsA',
+            'coordsB': 'sim_coordsB',
+            'velocidad': 'sim_velocidad',
+            'horaInicio': 'sim_horaInicio'
+        };
+
+        for (const id in dataMap) {
+            const value = localStorage.getItem(dataMap[id]);
+            if (value !== null && value !== '') {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            }
+        }
+    }
+
+    function saveData() {
+        const dataMap = {
+            'coordsA': 'sim_coordsA',
+            'coordsB': 'sim_coordsB',
+            'velocidad': 'sim_velocidad',
+            'horaInicio': 'sim_horaInicio'
+        };
+
+        for (const id in dataMap) {
+            const input = document.getElementById(id);
+            if (input) {
+                localStorage.setItem(dataMap[id], input.value);
+            }
+        }
+    }
+
+    // ================================================================
+    // MAPA (CyclOSM)
+    // ================================================================
+    function initializeMap(lat, lon) {
+        if (map !== null) return;
+
+        if (typeof L === 'undefined') {
+            console.error("Error: La librería Leaflet no se ha cargado.");
+            return;
+        }
+
+        try {
+            if (L.Icon && L.Icon.Default) {
+                L.Icon.Default.mergeOptions({
+                    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+                    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+                });
+            }
+        } catch(e) {
+            console.error("Error al configurar rutas de iconos de Leaflet.", e);
+        }
+
+        map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false,
+            dragging: !L.Browser.mobile,
+            touchZoom: true,
+            tap: false
+        }).setView([lat, lon], CONFIG.MAP_ZOOM);
+
+        map.invalidateSize();
+
+        L.tileLayer(
+    'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+    {
+        maxZoom: 20,
+        attribution: '&copy; CyclOSM & OpenStreetMap contributors'
+    }
+).addTo(map);
+
+        setTimeout(() => {
+            if (map) map.invalidateSize();
+        }, 500);
+
+        airplaneMarker = L.marker([lat, lon], {icon: NavIcon}).addTo(map);
+    }
+
+    function updateMap(latA, lonA, latB, lonB) {
+        if (!hasLoadedSimulation) return;
+
+        if (map === null) {
+            initializeMap(latA, lonA);
+        }
+
+        puntoA_Coords = L.latLng(latA, lonA);
+        puntoB_Coords = L.latLng(latB, lonB);
+
+        if (polyline) {
+            try { map.removeLayer(polyline); } catch (e) {}
+            polyline = null;
+        }
+        if (polylineBorder) {
+            try { map.removeLayer(polylineBorder); } catch (e) {}
+            polylineBorder = null;
+        }
+
+        const latlngs = [
+            [latA, lonA],
+            [latB, lonB]
+        ];
+        polylineBorder = L.polyline(latlngs, { color: '#fff', weight: 7, opacity: 1 }).addTo(map);
+        polyline = L.polyline(latlngs, {color: '#ff6600', weight: 4, opacity: 0.7}).addTo(map);
+
+        if (airplaneMarker) {
+            airplaneMarker.setLatLng(puntoA_Coords);
+            const puntoA = parseCoordinates(document.getElementById('coordsA').value);
+            const puntoB = parseCoordinates(document.getElementById('coordsB').value);
+            if (puntoA && puntoB) {
+                currentBearing = calculateBearing(puntoA.lat, puntoA.lon, puntoB.lat, puntoB.lon);
+            }
+            rotateAirplane();
+        } else {
+            airplaneMarker = L.marker(puntoA_Coords, {icon: NavIcon}).addTo(map);
+            const puntoA = parseCoordinates(document.getElementById('coordsA').value);
+            const puntoB = parseCoordinates(document.getElementById('coordsB').value);
+            if (puntoA && puntoB) {
+                currentBearing = calculateBearing(puntoA.lat, puntoA.lon, puntoB.lat, puntoB.lon);
+            }
+            rotateAirplane();
+        }
+
+        if (puntoA_Coords) {
+            map.setView(puntoA_Coords, map.getZoom());
+        }
+
+        if (map) map.invalidateSize();
+    }
+
+    function interpolatePoint(latLngA, latLngB, fraction) {
+        const lat = latLngA.lat + (latLngB.lat - latLngA.lat) * fraction;
+        const lng = latLngA.lng + (latLngB.lng - latLngA.lng) * fraction;
+        return L.latLng(lat, lng);
+    }
+
+    function rotateAirplane() {
+        if (airplaneMarker && airplaneMarker.getElement()) {
+            const rotationAngle = currentBearing;
+            const iconElement = airplaneMarker.getElement().querySelector('.nav-icon');
+            if (iconElement) iconElement.style.transform = `rotate(${rotationAngle}deg)`;
+        }
+    }
+
+    // ================================================================
+    // GEOMÉTRICAS
+    // ================================================================
+    function toRad(grados) {
+        return grados * Math.PI / 180;
+    }
+
+    function calculateBearing(lat1, lon1, lat2, lon2) {
+        const dLon = toRad(lon2 - lon1);
+        const lat1Rad = toRad(lat1);
+        const lat2Rad = toRad(lat2);
+
+        const y = Math.sin(dLon) * Math.cos(lat2Rad);
+        const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+                  Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(dLon);
+
+        let bearingRad = Math.atan2(y, x);
+        let bearingDeg = bearingRad * (180 / Math.PI);
+
+        bearingDeg = (bearingDeg + 360) % 360;
+
+        return bearingDeg;
+    }
+
+    function dmsToDd(dmsStr) {
+        if (!dmsStr) return null;
+        let cleanedStr = dmsStr.trim();
+        let sign = 1;
+
+        const direction = cleanedStr.slice(-1).toUpperCase();
+        if ('NSEW'.includes(direction)) {
+            cleanedStr = cleanedStr.slice(0, -1).trim();
+            if (direction === 'S' || direction === 'W') sign = -1;
+        }
+
+        cleanedStr = cleanedStr.replace(/[°'\u2032"\u2033]/g, ' ').trim();
+        const parts = cleanedStr.split(/\s+/).filter(p => p.length > 0).map(parseFloat);
+
+        let dd = 0;
+        let isValid = false;
+
+        if (parts.length === 1 && !isNaN(parts[0])) {
+            dd = parts[0];
+            isValid = true;
+            if (dd >= 0) dd = Math.abs(dd);
+        } else if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            dd = parts[0] + (parts[1] / 60);
+            isValid = true;
+        } else if (parts.length >= 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            dd = parts[0] + (parts[1] / 60) + (parts[2] / 3600);
+            isValid = true;
+        }
+
+        if (!isValid) return null;
+        return dd * sign;
+    }
+
+    function parseCoordinates(coordStr) {
+        if (!coordStr || typeof coordStr !== 'string' || coordStr.trim().length === 0) return null;
+        const parts = coordStr.trim().split(/[,\s]+/).filter(p => p.length > 0);
+
+        if (parts.length === 2) {
+            let latDd = dmsToDd(parts[0]);
+            let lonDd = dmsToDd(parts[1]);
+
+            if (latDd !== null && lonDd !== null) {
+                if (Math.abs(latDd) <= 90 && Math.abs(lonDd) <= 180) {
+                    return { lat: latDd, lon: lonDd };
+                }
+            }
+        }
+        return null;
+    }
+
+    function haversine(lat1, lon1, lat2, lon2) {
+        const R = 6371000;
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const lat1Rad = toRad(lat1);
+        const lat2Rad = toRad(lat2);
+        const a = Math.sin(dLat / 2) ** 2 +
+                  Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    // Vincenty inversa sobre el elipsoide WGS-84 (mismo método usado en la app de distancia).
+    function vincentyDistance(lat1, lon1, lat2, lon2) {
+        const a = 6378137;
+        const f = 1 / 298.257223563;
+        const b = (1 - f) * a;
+        const phi1 = toRad(lat1), phi2 = toRad(lat2), L = toRad(lon2 - lon1);
+        const U1 = Math.atan((1 - f) * Math.tan(phi1));
+        const U2 = Math.atan((1 - f) * Math.tan(phi2));
+        const sinU1 = Math.sin(U1), cosU1 = Math.cos(U1);
+        const sinU2 = Math.sin(U2), cosU2 = Math.cos(U2);
+        let lambda = L, lambdaPrev, iter = 0;
+        let sinSigma, cosSigma, sigma, sinAlpha, cosSqAlpha, cos2SigmaM;
+        do {
+            const sinLambda = Math.sin(lambda), cosLambda = Math.cos(lambda);
+            sinSigma = Math.sqrt((cosU2 * sinLambda) ** 2 +
+                (cosU1 * sinU2 - sinU1 * cosU2 * cosLambda) ** 2);
+            if (sinSigma === 0) return 0;
+            cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
+            sigma = Math.atan2(sinSigma, cosSigma);
+            sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+            cosSqAlpha = 1 - sinAlpha ** 2;
+            cos2SigmaM = cosSqAlpha !== 0 ? cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha : 0;
+            const C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
+            lambdaPrev = lambda;
+            lambda = L + (1 - C) * f * sinAlpha *
+                (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cos2SigmaM ** 2)));
+        } while (Math.abs(lambda - lambdaPrev) > 1e-12 && ++iter < 200);
+        if (iter >= 200) return haversine(lat1, lon1, lat2, lon2);
+        const uSq = cosSqAlpha * (a*a - b*b) / (b*b);
+        const A = 1 + uSq/16384 * (4096 + uSq * (-768 + uSq * (320 - 175*uSq)));
+        const B = uSq/1024 * (256 + uSq * (-128 + uSq * (74 - 47*uSq)));
+        const deltaSigma = B * sinSigma * (cos2SigmaM + B/4 *
+            (cosSigma * (-1 + 2*cos2SigmaM**2) - B/6 * cos2SigmaM *
+            (-3 + 4*sinSigma**2) * (-3 + 4*cos2SigmaM**2)));
+        return b * A * (sigma - deltaSigma);
+    }
+
+    function calcularDistanciaCoordenadas() {
+        const coordsAStr = document.getElementById('coordsA').value;
+        const coordsBStr = document.getElementById('coordsB').value;
+        const distanciaInput = document.getElementById('distancia');
+
+        const puntoA = parseCoordinates(coordsAStr);
+        const puntoB = parseCoordinates(coordsBStr);
+
+        const defaultLat = 40.416775;
+        const defaultLon = -3.703790;
+
+        if (!puntoA || !puntoB) {
+            if (!distanciaInput.value || parseFloat(distanciaInput.value) <= 0) {
+                distanciaInput.value = '0';
+            }
+            distanciaInput.readOnly = false;
+            distanciaInput.style.backgroundColor = '#fff8e1';
+            distanciaInput.title = 'Introduce distancia manual en km (modo sin coordenadas).';
+            usePositionSimulation = false;
+
+            if (map === null) initializeMap(defaultLat, defaultLon);
+            if (polyline) {
+                try { map.removeLayer(polyline); } catch (e) {}
+                polyline = null;
+            }
+            if (polylineBorder) {
+                try { map.removeLayer(polylineBorder); } catch (e) {}
+                polylineBorder = null;
+            }
+        } else {
+            const distanciaCalculada = (vincentyDistance(puntoA.lat, puntoA.lon, puntoB.lat, puntoB.lon) / 1000).toFixed(3);
+            currentBearing = calculateBearing(puntoA.lat, puntoA.lon, puntoB.lat, puntoB.lon);
+            distanciaInput.value = distanciaCalculada;
+            distanciaInput.readOnly = true;
+            distanciaInput.style.backgroundColor = '';
+            distanciaInput.title = 'Distancia calculada automáticamente.';
+
+            usePositionSimulation = true;
+            updateMap(puntoA.lat, puntoA.lon, puntoB.lat, puntoB.lon);
+            return;
+        }
+    }
+
+    // ================================================================
+    // CONTROL PRINCIPAL (PLAY/STOP)
+    // ================================================================
+    function toggleSimulation() {
+        if (intervalId) {
+            stopSimulation(true);
+        } else {
+            iniciarSimulacion();
+        }
+    }
+
+    function stopSimulation(userStopped = false) {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+            localStorage.setItem('sim_is_active', 'false');
+
+            updateUIState('stopped');
+
+            if (userStopped) {
+                tiempoTranscurrido = 0;
+                safeSetTextById('tiempoActual', '00:00:00');
+                safeSetTextById('distanciaRecorrida', '0.00');
+                if (airplaneMarker && puntoA_Coords) airplaneMarker.setLatLng(puntoA_Coords);
+            }
+        }
+    }
+
+    // ================================================================
+    // VALIDACIÓN / MANEJO DE INPUTS
+    // ================================================================
+    function validateInputs() {
+        let allValid = true;
+
+        const coordsAEl = document.getElementById('coordsA');
+        const coordsBEl = document.getElementById('coordsB');
+        const velEl = document.getElementById('velocidad');
+        const horaEl = document.getElementById('horaInicio');
+        const distanciaEl = document.getElementById('distancia');
+
+        // Validar que los elementos esenciales existan
+        if (!coordsAEl || !coordsBEl || !velEl || !horaEl || !distanciaEl) return false;
+
+        const coordsAVal = parseCoordinates(coordsAEl.value);
+        const coordsBVal = parseCoordinates(coordsBEl.value);
+
+        const coordsAFeedback = document.getElementById('coordsA-feedback');
+        const coordsBFeedback = document.getElementById('coordsB-feedback');
+
+        const manualMode = coordsAEl.value.trim().length === 0;
+
+        if (manualMode) {
+            coordsAEl.classList.remove('input-invalid');
+            coordsAEl.classList.add('input-valid');
+            coordsAEl.setAttribute('aria-invalid', 'false');
+            if (coordsAFeedback) {
+                coordsAFeedback.textContent = 'Modo distancia manual activado';
+                coordsAFeedback.classList.remove('error');
+                coordsAFeedback.classList.add('ok');
+            }
+        } else {
+            if (!coordsAVal) {
+                coordsAEl.classList.add('input-invalid');
+                coordsAEl.classList.remove('input-valid');
+                coordsAEl.setAttribute('aria-invalid', 'true');
+                if (coordsAFeedback) {
+                    coordsAFeedback.textContent = 'Coordenadas inválidas. Usa formato: lat, lon (DD) o DMS.';
+                    coordsAFeedback.classList.add('error');
+                    coordsAFeedback.classList.remove('ok');
+                }
+                allValid = false;
+            } else {
+                coordsAEl.classList.remove('input-invalid');
+                coordsAEl.classList.add('input-valid');
+                coordsAEl.setAttribute('aria-invalid', 'false');
+                if (coordsAFeedback) {
+                    coordsAFeedback.textContent = '';
+                    coordsAFeedback.classList.remove('error');
+                    coordsAFeedback.classList.add('ok');
+                }
+            }
+        }
+
+        if (!coordsBVal) {
+            coordsBEl.classList.add('input-invalid');
+            coordsBEl.classList.remove('input-valid');
+            coordsBEl.setAttribute('aria-invalid', 'true');
+            if (coordsBFeedback) {
+                coordsBFeedback.textContent = 'Coordenadas inválidas. Usa formato: lat, lon (DD) o DMS.';
+                coordsBFeedback.classList.add('error');
+                coordsBFeedback.classList.remove('ok');
+            }
+            allValid = false;
+        } else {
+            coordsBEl.classList.remove('input-invalid');
+            coordsBEl.classList.add('input-valid');
+            coordsBEl.setAttribute('aria-invalid', 'false');
+            if (coordsBFeedback) {
+                coordsBFeedback.textContent = '';
+                coordsBFeedback.classList.remove('error');
+                coordsBFeedback.classList.add('ok');
+            }
+        }
+
+        const vel = parseFloat(velEl.value);
+        if (isNaN(vel) || vel < CONFIG.MIN_SPEED) {
+            velEl.classList.add('input-invalid');
+            velEl.classList.remove('input-valid');
+            velEl.setAttribute('aria-invalid', 'true');
+            allValid = false;
+        } else {
+            velEl.classList.remove('input-invalid');
+            velEl.classList.add('input-valid');
+            velEl.setAttribute('aria-invalid', 'false');
+        }
+
+        if (!horaEl.value) {
+            horaEl.classList.add('input-invalid');
+            horaEl.classList.remove('input-valid');
+            horaEl.setAttribute('aria-invalid', 'true');
+            allValid = false;
+        } else {
+            horaEl.classList.remove('input-invalid');
+            horaEl.classList.add('input-valid');
+            horaEl.setAttribute('aria-invalid', 'false');
+        }
+
+        if (manualMode) {
+            const d = parseFloat(distanciaEl.value);
+            if (isNaN(d) || d <= 0) {
+                distanciaEl.classList.add('input-invalid');
+                distanciaEl.classList.remove('input-valid');
+                distanciaEl.setAttribute('aria-invalid', 'true');
+                allValid = false;
+            } else {
+                distanciaEl.classList.remove('input-invalid');
+                distanciaEl.classList.add('input-valid');
+                distanciaEl.setAttribute('aria-invalid', 'false');
+            }
+        }
+
+        return allValid;
+    }
+
+    let inputChangeTimeout = null;
+
+    function handleInputChanges(e) {
+        const sourceId = e && e.target && e.target.id ? e.target.id : null;
+
+        if (inputChangeTimeout) clearTimeout(inputChangeTimeout);
+
+        inputChangeTimeout = setTimeout(() => {
+            if (intervalId && sourceId !== 'velocidad') {
+                const confirmed = confirm('Hay una simulación en curso. ¿Deseas cambiar los parámetros? Esto detendrá la simulación.');
+                if (!confirmed) return;
+                stopSimulation(true);
+            }
+
+            saveData();
+            calcularDistanciaCoordenadas();
+            const uiValid = validateInputs();
+
+            const distanciaTotalKm = parseFloat(document.getElementById('distancia').value);
+            const velocidadMediaM_min = parseFloat(document.getElementById('velocidad').value);
+            const horaInicioStr = document.getElementById('horaInicio').value;
+
+            const isValid = distanciaTotalKm > 0 &&
+                            !isNaN(velocidadMediaM_min) &&
+                            velocidadMediaM_min >= CONFIG.MIN_SPEED &&
+                            horaInicioStr !== '' &&
+                            (!usePositionSimulation || (puntoA_Coords !== null && puntoB_Coords !== null)) &&
+                            uiValid;
+
+            if (!isValid) {
+                if (intervalId && sourceId !== 'velocidad') stopSimulation(false);
+                localStorage.setItem('sim_is_active', 'false');
+                updateUIState('waiting');
+            } else {
+                if (!intervalId) updateUIState('ready');
+            }
+        }, 300);
+    }
+
+    function formatDuration(totalSeconds) {
+        if (totalSeconds < 0) totalSeconds = 0;
+
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+
+        const hh = String(h).padStart(2, '0');
+        const mm = String(m).padStart(2, '0');
+        const ss = String(s).padStart(2, '0');
+
+        return `${hh}:${mm}:${ss}`;
+    }
+
+    function formatArrivalTime(date) {
+        const h = String(date.getHours()).padStart(2, '0');
+        const m = String(date.getMinutes()).padStart(2, '0');
+        const s = String(date.getSeconds()).padStart(2, '0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function iniciarSimulacion() {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        distanciaTotalKm = parseFloat(document.getElementById('distancia').value);
+        const velocidadMediaM_min = parseFloat(document.getElementById('velocidad').value);
+        const horaInicioStr = document.getElementById('horaInicio').value;
+
+        if (distanciaTotalKm <= 0 || isNaN(velocidadMediaM_min) || velocidadMediaM_min <= 0 || horaInicioStr === '') {
+            updateUIState('waiting');
+            localStorage.setItem('sim_is_active', 'false');
+            return;
+        }
+
+        if (usePositionSimulation && (!puntoA_Coords || !puntoB_Coords)) {
+            updateUIState('waiting');
+            localStorage.setItem('sim_is_active', 'false');
+            return;
+        }
+
+        localStorage.setItem('sim_is_active', 'true');
+
+        const distanciaTotalMetros = distanciaTotalKm * 1000;
+        const velocidadM_seg = velocidadMediaM_min / 60;
+        tiempoTotalSegundos = Math.round(distanciaTotalMetros / velocidadM_seg);
+
+        const [h, m] = horaInicioStr.split(':').map(Number);
+
+        horaInicioObj = new Date();
+        const now = new Date();
+
+        horaInicioObj.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+        horaInicioObj.setHours(h, m, 0, 0);
+
+        if (horaInicioObj.getTime() > now.getTime() + (60 * 1000)) {
+            horaInicioObj.setDate(horaInicioObj.getDate() - 1);
+        }
+
+        const diffMili = now.getTime() - horaInicioObj.getTime();
+        tiempoTranscurrido = Math.max(0, Math.floor(diffMili / 1000));
+
+        const tiempoTranscurridoMinutosActual = tiempoTranscurrido / 60;
+        const velocidadMediaRealActual = tiempoTranscurridoMinutosActual > 0
+            ? distanciaTotalMetros / tiempoTranscurridoMinutosActual
+            : 0;
+
+        if (velocidadMediaRealActual <= CONFIG.SPEED_STOP_THRESHOLD) {
+            localStorage.setItem('sim_is_active', 'false');
+            updateUIState('stopped');
+
+            horaLlegadaObj = new Date(horaInicioObj.getTime() + (tiempoTotalSegundos * 1000));
+            safeSetTextById('tiempoTotal', formatDuration(tiempoTotalSegundos));
+            safeSetTextById('horaLlegada', formatArrivalTime(horaLlegadaObj));
+            safeSetTextById('tiempoActual', formatDuration(tiempoTranscurrido));
+            safeSetTextById('distanciaRecorrida', distanciaTotalKm.toLocaleString());
+
+            if(airplaneMarker && puntoB_Coords) airplaneMarker.setLatLng(puntoB_Coords);
+            return;
+        }
+
+        horaLlegadaObj = new Date(horaInicioObj.getTime() + (tiempoTotalSegundos * 1000));
+        safeSetTextById('tiempoTotal', formatDuration(tiempoTotalSegundos));
+        safeSetTextById('horaLlegada', formatArrivalTime(horaLlegadaObj));
+
+        updateUIState('live');
+        actualizarProgreso();
+        intervalId = setInterval(actualizarProgreso, CONFIG.UPDATE_INTERVAL);
+    }
+
+    function actualizarProgreso() {
+        // Basar el progreso en tiempo real, no en ticks de setInterval.
+        // iOS/PWA puede suspender los temporizadores cuando la app queda en segundo plano.
+        if (!horaInicioObj) return;
+        const ahora = new Date();
+        tiempoTranscurrido = Math.max(0, Math.floor((ahora.getTime() - horaInicioObj.getTime()) / 1000));
+
+        const distanciaTotalMetros = distanciaTotalKm * 1000;
+        const velocidadMediaM_min = parseFloat(document.getElementById('velocidad').value);
+        const velocidadM_seg = velocidadMediaM_min / 60;
+
+        const speedBadge = document.getElementById('realSpeedBadge');
+
+        const distanciaRecorridaMetros = Math.min(
+            tiempoTranscurrido * velocidadM_seg,
+            distanciaTotalMetros
+        );
+        const distanciaRecorridaKm = (distanciaRecorridaMetros / 1000).toFixed(2);
+
+        const tiempoTranscurridoMinutos = tiempoTranscurrido / 60;
+        const velocidadMostrada = tiempoTranscurridoMinutos > 0
+            ? distanciaTotalMetros / tiempoTranscurridoMinutos
+            : 0;
+
+        if (usePositionSimulation && airplaneMarker && puntoA_Coords && puntoB_Coords) {
+            const fraction = distanciaRecorridaMetros / distanciaTotalMetros;
+            const currentPosition = interpolatePoint(puntoA_Coords, puntoB_Coords, fraction);
+            airplaneMarker.setLatLng(currentPosition);
+            map.panTo(currentPosition, { animate: true, duration: CONFIG.MAP_PAN_DURATION_MS / 1000 });
+        }
+
+        safeSetTextById('realSpeedBadge', `${(velocidadMostrada).toFixed(2)} m/min`);
+        safeSetTextById('tiempoActual', formatDuration(tiempoTranscurrido));
+        safeSetTextById('distanciaRecorrida', distanciaRecorridaKm);
+    }
+
+    // ================================================================
+    // REANUDACIÓN CORRECTA EN iOS / PWA
+    // ================================================================
+    function sincronizarSimulacionAlRegresar() {
+        if (localStorage.getItem('sim_is_active') !== 'true') return;
+
+        // Si iOS eliminó/suspendió el interval, reconstruir la simulación desde los datos guardados.
+        if (!horaInicioObj || !intervalId) {
+            iniciarSimulacion();
+            return;
+        }
+
+        // Si el interval sigue existiendo, actualizar inmediatamente usando la hora real.
+        actualizarProgreso();
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            sincronizarSimulacionAlRegresar();
+        }
+    });
+
+    window.addEventListener('pageshow', () => {
+        sincronizarSimulacionAlRegresar();
+    });
+
+    window.addEventListener('focus', () => {
+        sincronizarSimulacionAlRegresar();
+    });
+
+    // ================================================================
+    // CONFIGURACIÓN SIMPLE: una sola simulación actual
+    // ================================================================
+    function aplicarConfiguracionActual() {
+        const coordsAEl = document.getElementById('coordsA');
+        const coordsBEl = document.getElementById('coordsB');
+        const velocidadEl = document.getElementById('velocidad');
+        const horaEl = document.getElementById('horaInicio');
+        const distanciaEl = document.getElementById('distancia');
+
+        const a = parseCoordinates(coordsAEl ? coordsAEl.value : '');
+        const b = parseCoordinates(coordsBEl ? coordsBEl.value : '');
+        const velocidad = parseFloat(velocidadEl ? velocidadEl.value : '');
+        const hora = horaEl ? horaEl.value : '';
+
+        // La versión simple solo necesita estos cuatro datos.
+        if (!a || !b) {
+            alert('Revisa las coordenadas del Punto de Suelta y del Palomar.');
+            return;
+        }
+        if (!Number.isFinite(velocidad) || velocidad <= 0) {
+            alert('Revisa la velocidad de la simulación.');
+            return;
+        }
+        if (!hora) {
+            alert('Selecciona la Hora de Suelta.');
+            return;
+        }
+
+        const distanciaMetros = vincentyDistance(a.lat, a.lon, b.lat, b.lon);
+        const distanciaKm = distanciaMetros / 1000;
+        if (!Number.isFinite(distanciaKm) || distanciaKm <= 0) {
+            alert('El Punto de Suelta y el Palomar deben ser coordenadas diferentes.');
+            return;
+        }
+
+        if (distanciaEl) distanciaEl.value = distanciaKm.toFixed(3);
+
+        // Primero establecer el estado de la simulación y después dibujar la ruta.
+        puntoA_Coords = L.latLng(a.lat, a.lon);
+        puntoB_Coords = L.latLng(b.lat, b.lon);
+        usePositionSimulation = true;
+        hasLoadedSimulation = true;
+
+        saveData();
+        localStorage.setItem('flytrack_configured', 'true');
+        localStorage.setItem('sim_is_active', 'false');
+
+        updateMap(a.lat, a.lon, b.lat, b.lon);
+        updateUIState('ready');
+        document.getElementById('input-wrapper')?.classList.add('hidden');
+    }
+
+    // ================================================================
+    // SIMULACIONES: Guardar / Cargar / Borrar / Listar
+    // ================================================================
+    function saveSimulationToList() {
+        const coordsAInput = document.getElementById('coordsA');
+        const coordsBInput = document.getElementById('coordsB');
+        // support either the in-panel input (legacy) or the modal input
+        const nameEl = document.getElementById('simulationName') || document.getElementById('modalSimulationName');
+
+        const coordsA = coordsAInput ? coordsAInput.value.trim() : '';
+        const coordsB = coordsBInput ? coordsBInput.value.trim() : '';
+        const name = nameEl ? String(nameEl.value || '').trim() : '';
+
+        if (!coordsA || !coordsB) {
+            alert('Por favor ingresa ambas coordenadas antes de guardar.');
+            return;
+        }
+
+        if (!name) {
+            alert('Por favor ingresa un nombre para la simulación.');
+            return;
+        }
+
+        const coordRegex = /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/;
+        if (!coordRegex.test(coordsA) || !coordRegex.test(coordsB)) {
+            alert('Formato de coordenadas inválido. Usa: lat, lon');
+            return;
+        }
+
+        let simulations = JSON.parse(localStorage.getItem('flytrack_simulations') || '[]');
+
+        // Si estamos editando una simulación existente, sobrescribirla
+        const editingIdEl = document.getElementById('editingSimulationId');
+        const editingId = editingIdEl ? String(editingIdEl.value || '').trim() : '';
+
+        if (editingId) {
+            const idx = simulations.findIndex(s => s.id === editingId);
+            if (idx !== -1) {
+                simulations[idx].name = name;
+                simulations[idx].coordsA = coordsA;
+                simulations[idx].coordsB = coordsB;
+                simulations[idx].timestamp = new Date().toLocaleString();
+            } else {
+                // fallback: create new if id not found
+                simulations.push({ id: editingId, name, coordsA, coordsB, timestamp: new Date().toLocaleString() });
+            }
+        } else {
+            const newSimulation = {
+                id: String(Date.now()),
+                name: name,
+                coordsA: coordsA,
+                coordsB: coordsB,
+                timestamp: new Date().toLocaleString()
+            };
+
+            simulations.push(newSimulation);
+        }
+        localStorage.setItem('flytrack_simulations', JSON.stringify(simulations));
+
+        if (nameEl) {
+            try { nameEl.value = ''; } catch (e) {}
+            try { nameEl.style.background = 'rgba(76, 175, 80, 0.3)'; } catch (e) {}
+            setTimeout(() => { try { nameEl.style.background = 'rgba(255, 255, 255, 0.08)'; } catch (e) {} }, 500);
+        }
+
+        // Limpiar estado de edición si existía
+        try { const e = document.getElementById('editingSimulationId'); if (e) e.value = ''; } catch (e) {}
+        try { const cs = document.getElementById('configSaveBtn'); if (cs) cs.textContent = 'Guardar'; } catch (e) {}
+
+        if (document.getElementById('simulationsSearchInput')) {
+            document.getElementById('simulationsSearchInput').value = '';
+        }
+        loadSimulationsList();
+
+        // Si el guardado se realizó desde el panel de configuración, cerrarlo y abrir la lista
+        try {
+            const panel = document.getElementById('simulationsPanel');
+            if (panel) openSimulationsPanel();
+        } catch (e) {}
+        try { closeInputWrapperForSave(); } catch (e) {}
+    }
+
+    function loadSimulationsList() {
+        const list = document.getElementById('simulationsList');
+        const simulations = JSON.parse(localStorage.getItem('flytrack_simulations') || '[]');
+        list.innerHTML = '';
+
+        const filtered = simulations;
+
+        if (filtered.length === 0) {
+            list.innerHTML = '<div class="simulations-empty">No se encontraron simulaciones.</div>';
+            return;
+        }
+
+        filtered.forEach(sim => {
+            const item = document.createElement('div');
+            item.className = 'simulation-item';
+            item.innerHTML = `
+                <div class="simulation-item-info" onclick="loadSimulation('${escapeHtml(sim.id)}')">
+                    <div class="simulation-item-name">${escapeHtml(sim.name)}</div>
+                    <div class="simulation-item-coords">${escapeHtml(sim.coordsA)} → ${escapeHtml(sim.coordsB)}</div>
+                </div>
+                <button class="simulation-item-edit" onclick="editSimulation('${escapeHtml(sim.id)}')">
+                    <span class="material-symbols-outlined">edit</span>
+                </button>
+                <button class="simulation-item-delete" onclick="deleteSimulation('${escapeHtml(sim.id)}')">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function loadSimulation(id) {
+        const simulations = JSON.parse(localStorage.getItem('flytrack_simulations') || '[]');
+        const simulation = simulations.find(s => s.id === id);
+
+        if (!simulation) return;
+
+        document.getElementById('coordsA').value = simulation.coordsA;
+        document.getElementById('coordsB').value = simulation.coordsB;
+
+        hasLoadedSimulation = true;
+
+        handleInputChanges({target: {id: 'coordsA'}});
+
+        closeSimulationsPanel();
+
+        const wrapper = document.querySelector('.map-wrapper');
+        if (wrapper) wrapper.scrollIntoView({behavior: 'smooth'});
+    }
+
+    function deleteSimulation(id) {
+        if (!confirm('¿Estás seguro de que deseas eliminar esta simulación?')) return;
+
+        let simulations = JSON.parse(localStorage.getItem('flytrack_simulations') || '[]');
+        simulations = simulations.filter(s => s.id !== id);
+        localStorage.setItem('flytrack_simulations', JSON.stringify(simulations));
+
+        loadSimulationsList();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ================================================================
+    // PANEL DE SIMULACIONES: apertura / cierre / drag
+    // ================================================================
+    function toggleSavedSimulations() {
+        const panel = document.getElementById('simulationsPanel');
+        if (!panel) return;
+        document.getElementById('input-wrapper')?.classList.add('hidden');
+        document.getElementById('results')?.classList.add('hidden');
+        loadSimulationsList();
+        panel.classList.toggle('hidden');
+    }
+
+    function updateControlsPosition() {
+        const panel = document.getElementById('simulationsPanel');
+        const controls = document.getElementById('map-controls');
+        if (!panel || !controls) return;
+
+        // ajustar posición de controles para que no queden sobre el panel
+        if (panel.classList.contains('open') || panel.classList.contains('expanded')) {
+            controls.style.transform = 'translateY(-160px)';
+            controls.style.opacity = '0.9';
+        } else {
+            controls.style.transform = 'translateY(0)';
+            controls.style.opacity = '1';
+        }
+    }
+
+    function openSimulationsPanel() {
+        const panel = document.getElementById('simulationsPanel');
+        if (!panel) return;
+        document.getElementById('input-wrapper')?.classList.add('hidden');
+        document.getElementById('results')?.classList.add('hidden');
+        loadSimulationsList();
+        panel.classList.remove('hidden');
+    }
+
+    function closeSimulationsPanel() {
+        const panel = document.getElementById('simulationsPanel');
+        if (panel) panel.classList.add('hidden');
+    }
+
+    function toggleSimulationsPanel() {
+        const panel = document.getElementById('simulationsPanel');
+        if (panel.classList.contains('open')) closeSimulationsPanel(); else openSimulationsPanel();
+    }
+
+    function startPanelDrag(e) {
+        const panel = document.getElementById('simulationsPanel');
+        const controls = document.getElementById('map-controls');
+        if (!panel) return;
+
+        isPanelDragging = true;
+        panelStartY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        panelLastY = panelStartY;
+        panelVelocity = 0;
+
+        if (panel.classList.contains('collapsed')) {
+            panel.classList.remove('collapsed');
+            panel.classList.add('expanded');
+        }
+
+        // Guardar una referencia fija al inicio del gesto.
+        // Así la posición no se vuelve a calcular desde un panel que ya se movió.
+        panelStartTop = panel.getBoundingClientRect().top;
+        panelCurrentY = 0;
+
+        panel.style.transition = 'none';
+        if (controls) controls.style.transition = 'none';
+        e.preventDefault();
+    }
+
+    function movePanelDrag(e) {
+        if (!isPanelDragging) return;
+
+        const panel = document.getElementById('simulationsPanel');
+        if (!panel) return;
+
+        const handle = document.querySelector('.simulations-handle');
+        const handleHeight = handle ? handle.offsetHeight : 56;
+        const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+        const deltaY = clientY - panelStartY;
+
+        // Límites calculados contra la posición inicial fija del gesto.
+        const minTop = Math.max(20, window.innerHeight - panel.offsetHeight - 20);
+        const maxTop = window.innerHeight - handleHeight - 20;
+        const desiredTop = panelStartTop + deltaY;
+        const clampedTop = Math.min(maxTop, Math.max(minTop, desiredTop));
+
+        panelCurrentY = clampedTop - panelStartTop;
+
+        if (panel.classList.contains('expanded')) {
+            panel.style.transform = `translate(-50%, ${panelCurrentY}px)`;
+        }
+
+        // Velocidad real entre eventos, en lugar de la distancia total acumulada.
+        panelVelocity = clientY - panelLastY;
+        panelLastY = clientY;
+
+        e.preventDefault();
+    }
+
+    function endPanelDrag(e) {
+        if (!isPanelDragging) return;
+        isPanelDragging = false;
+
+        const panel = document.getElementById('simulationsPanel');
+        const controls = document.getElementById('map-controls');
+
+        // Restaurar las transiciones normales al terminar el gesto.
+        if (panel) panel.style.transition = '';
+        if (controls) controls.style.transition = '';
+
+        const velocityThreshold = -5;
+        const distanceThreshold = -100;
+
+        if (panelVelocity < velocityThreshold || panelCurrentY < distanceThreshold) {
+            openSimulationsPanel();
+        } else {
+            closeSimulationsPanel();
+        }
+
+        updateControlsPosition();
+    }
+
+    // ================================================================
+    // initSimulationsPanel: crea listeners y carga lista
+    // ================================================================
+    function initSimulationsPanel() {
+        // Evitar múltiples inicializaciones
+        if (initSimulationsPanel._initialized) return;
+        initSimulationsPanel._initialized = true;
+
+        // listeners para búsqueda
+        const searchInput = document.getElementById('simulationsSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => loadSimulationsList());
+            searchInput.addEventListener('focus', () => {
+                const panel = document.getElementById('simulationsPanel');
+                if (panel && panel.classList.contains('collapsed')) {
+                    openSimulationsPanel();
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 300);
+                }
+            });
+            searchInput.addEventListener('click', () => {
+                const panel = document.getElementById('simulationsPanel');
+                if (panel && panel.classList.contains('collapsed')) {
+                    openSimulationsPanel();
+                    setTimeout(() => {
+                        searchInput.focus();
+                    }, 300);
+                }
+            });
+        }
+
+        // collapsed input click => abrir panel y transferir texto
+        const collapsedInput = document.getElementById('simulationsCollapsedSearchInput');
+        if (collapsedInput) {
+            collapsedInput.addEventListener('click', () => {
+                const realSearch = document.getElementById('simulationsSearchInput');
+                if (!realSearch) {
+                    openSimulationsPanel();
+                    return;
+                }
+                if (document.getElementById('simulationsPanel').classList.contains('collapsed')) {
+                    openSimulationsPanel();
+                }
+                realSearch.removeAttribute('readonly');
+                setTimeout(() => {
+                    try {
+                        realSearch.focus();
+                        if (collapsedInput.value) {
+                            realSearch.value = collapsedInput.value;
+                            realSearch.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    } catch (err) {
+                        console.warn('No se pudo enfocar simulationsSearchInput:', err);
+                    }
+                }, 300);
+            });
+        }
+
+        // Botón + usa su onclick para abrir directamente la configuración.
+
+        // Handle dragging
+        const handle = document.querySelector('.simulations-handle');
+        if (handle) {
+            handle.addEventListener('mousedown', startPanelDrag);
+            handle.addEventListener('touchstart', startPanelDrag, {passive: false});
+            window.addEventListener('mousemove', movePanelDrag);
+            window.addEventListener('touchmove', movePanelDrag, {passive: false});
+            window.addEventListener('mouseup', endPanelDrag);
+            window.addEventListener('touchend', endPanelDrag);
+        }
+
+        // Click sobre panel collapsed area para abrir
+        const collapsedBar = document.querySelector('.simulations-collapsed-bar');
+        if (collapsedBar) {
+            collapsedBar.addEventListener('click', (ev) => {
+                openSimulationsPanel();
+                const realSearch = document.getElementById('simulationsSearchInput');
+                if (realSearch) {
+                    setTimeout(() => { realSearch.focus(); }, 300);
+                }
+            });
+        }
+
+        // Inicializar lista
+        loadSimulationsList();
+
+        // Inicializar evento de guardado si no hay onclick (ya lo tienes en botón)
+        const saveBtn = document.getElementById('saveSimulationBtn');
+        if (saveBtn) {
+            // ya tiene onclick inline; no forzamos nada
+        }
+    }
+    
+    // Funciones para modal de guardado (Opción 3)
+    function openSaveModal(prefillName) {
+        const modal = document.getElementById('saveModal');
+        const modalInput = document.getElementById('modalSimulationName');
+        if (!modal) return;
+        try { console.debug('openSaveModal() called'); } catch(e) {}
+        // remove hidden class and apply inline fallbacks in case CSS stacking blocks it
+        modal.classList.remove('hidden');
+        try {
+            modal.style.position = 'fixed';
+            modal.style.left = '50%';
+            modal.style.top = '50%';
+            modal.style.transform = 'translate(-50%, -50%)';
+            modal.style.zIndex = '99999';
+            modal.style.display = 'block';
+            modal.style.opacity = '1';
+        } catch (e) {}
+        if (prefillName) modalInput.value = prefillName;
+        setTimeout(() => {
+            try { modalInput.focus(); } catch (e) {}
+        }, 160);
+    }
+
+    function closeSaveModal() {
+        const modal = document.getElementById('saveModal');
+        const modalInput = document.getElementById('modalSimulationName');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        modalInput.value = '';
+    }
+
+    function saveSimulationFromModal() {
+        const modalInput = document.getElementById('modalSimulationName');
+        const name = modalInput.value.trim();
+        const nameField = document.getElementById('simulationName');
+        if (!name) {
+            alert('Por favor ingresa un nombre para la simulación.');
+            try { modalInput.focus(); } catch (e) {}
+            return;
+        }
+        if (nameField) nameField.value = name;
+        // Reuse existing save logic
+        saveSimulationToList();
+        // feedback breve en collapsed input
+        const collapsed = document.getElementById('simulationsCollapsedSearchInput');
+        if (collapsed) {
+            const oldBg = collapsed.style.background;
+            collapsed.style.background = 'rgba(76,175,80,0.25)';
+            setTimeout(() => { collapsed.style.background = oldBg; }, 600);
+        }
+        closeSaveModal();
+    }
+
+    // Abrir el panel de configuración (input-wrapper) para guardar desde el botón +
+    function openInputWrapperForSave() {
+        const inputWrapper = document.getElementById('input-wrapper');
+        if (!inputWrapper) return;
+        // Preferir usar toggleSection si está disponible para mantener consistencia
+        if (typeof toggleSection === 'function') {
+            if (inputWrapper.classList.contains('hidden')) toggleSection('input-wrapper');
+        } else {
+            inputWrapper.classList.remove('hidden');
+        }
+        // Asegurarse de cerrar el panel inferior de simulaciones
+        if (typeof closeSimulationsPanel === 'function') closeSimulationsPanel();
+        // Enfocar el campo de nombre si existe
+        setTimeout(() => {
+            const name = document.getElementById('simulationName');
+            if (name) try { name.focus(); } catch (e) {}
+        }, 180);
+    }
+
+    function closeInputWrapperForSave() {
+        const inputWrapper = document.getElementById('input-wrapper');
+        if (!inputWrapper) return;
+        if (typeof toggleSection === 'function') {
+            if (!inputWrapper.classList.contains('hidden')) toggleSection('input-wrapper');
+        } else {
+            inputWrapper.classList.add('hidden');
+        }
+    }
+// Listeners para modal buttons
+document.addEventListener('DOMContentLoaded', () => {
+    const modalCancel = document.getElementById('modalCancelBtn');
+    const modalSave = document.getElementById('modalSaveBtn');
+    const modal = document.getElementById('saveModal');
+    if (modalCancel) modalCancel.addEventListener('click', closeSaveModal);
+    if (modalSave) modalSave.addEventListener('click', saveSimulationFromModal);
+    // Listeners para botones dentro del panel de configuración
+    const configApply = document.getElementById('configApplyBtn');
+    const configCancel = document.getElementById('configCancelBtn');
+    if (configApply) configApply.addEventListener('click', aplicarConfiguracionActual);
+    if (configCancel) configCancel.addEventListener('click', () => {
+        document.getElementById('input-wrapper')?.classList.add('hidden');
+    });
+    // cerrar modal al clickear fuera del contenido
+    if (modal) {
+        modal.addEventListener('click', (ev) => {
+            if (ev.target === modal) closeSaveModal();
+        });
+        // ensure modal is appended to body to avoid stacking/transform issues
+        try {
+            if (modal.parentElement !== document.body) document.body.appendChild(modal);
+        } catch (e) {
+            console.warn('No se pudo mover modal al body:', e);
+        }
+    }
+});
+// Delegated click handler as a fallback in case direct binding failed
+document.addEventListener('click', (ev) => {
+    try {
+        const btn = ev.target.closest ? ev.target.closest('#expandedAddBtn') : null;
+        if (btn) {
+            ev.stopPropagation();
+            openSaveModal();
+        }
+    } catch (e) {
+        console.warn('Delegated click handler error', e);
+    }
+    // Añadir estas variables al inicio de su script, antes de cualquier función:
+let startX = 0; // Posición X inicial del toque
+let currentX = 0; // Posición X actual durante el movimiento
+let dragging = false; // Estado para saber si se está arrastrando
+const MIN_DRAG_DISTANCE = 50; // Distancia mínima para considerar un 'swipe' (en píxeles)
+const panel = document.getElementById('simulationsPanel'); // Referencia al panel
+});
+    // ================================================================
+    // FIN DEL SCRIPT
+    // ================================================================
+</script>
+
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(console.error));
+}
+</script>
+
+</body>
+</html>
