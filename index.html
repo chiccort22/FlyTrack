@@ -990,7 +990,7 @@
 .map-overlay-center input[type=number],.map-overlay-center input[type=time],.map-overlay-center .coord-input-container input[type=text]{min-height:46px!important;}
 #input-wrapper .compact-config-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 #input-wrapper .compact-config-row .input-group{min-width:0;}
-#input-wrapper .distance-chip{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0 10px;border-radius:15px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);}
+#input-wrapper .distance-chip{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;margin:2px 0 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);}
 #input-wrapper .distance-chip label{margin:0!important;}
 #input-wrapper .distance-chip input{width:110px!important;min-height:0!important;height:auto!important;padding:0!important;border:0!important;background:transparent!important;text-align:right!important;font-weight:700!important;}
 .save-actions-row{display:grid!important;grid-template-columns:1.4fr 1fr!important;gap:8px!important;margin-top:12px!important;}
@@ -1121,7 +1121,6 @@
    Compensamos ese espacio para centrar la hora ópticamente. */
 #horaInicio{
   position:relative!important;
-  text-indent:-18px!important;
 }
 #horaInicio::-webkit-date-and-time-value{
   transform:translateX(-9px)!important;
@@ -1142,6 +1141,28 @@
   text-align:left!important;
 }
 
+
+/* ===== Estilo píldora para campos y controles ===== */
+input:not([type="checkbox"]):not([type="radio"]),
+select, textarea,
+button, .map-control-btn, .map-toggle-btn,
+.save-simulation-btn, .collapsed-add-btn,
+.simulation-item-edit, .simulation-item-delete,
+.glass-close, .geo-btn {
+  border-radius: 9999px !important;
+}
+/* Los campos de coordenadas comparten un único contorno alargado. */
+.coord-input-container { border-radius: 9999px !important; overflow: hidden; }
+.coord-input-container input[type="text"] { border-radius: 9999px 0 0 9999px !important; }
+.coord-input-container .geo-btn { border-radius: 0 9999px 9999px 0 !important; }
+/* Controles de la barra inferior y campos compactos. */
+.pill-controls .map-toggle-btn,
+.pill-controls .map-control-btn.floating,
+#input-wrapper .compact-config-row input,
+.map-overlay-center input[type="number"],
+.map-overlay-center input[type="time"],
+.save-actions-row .save-simulation-btn { border-radius: 9999px !important; }
+/* Mantener paneles y tarjetas intactos: solo cambia la forma de controles. */
 </style>
 </head>
 <body onload="initApp();">
@@ -1493,8 +1514,7 @@
                 }
             }
 
-            handleInputChanges();
-
+            // No disparar cambios de parámetros durante la restauración automática.
 
             if (localStorage.getItem('sim_is_active') === 'true') {
                 const distanciaTotalKm = parseFloat(document.getElementById('distancia').value);
@@ -2059,8 +2079,7 @@
 
         inputChangeTimeout = setTimeout(() => {
             if (intervalId && sourceId !== 'velocidad') {
-                const confirmed = confirm('Hay una simulación en curso. ¿Deseas cambiar los parámetros? Esto detendrá la simulación.');
-                if (!confirmed) return;
+                // Solo una edición real de parámetros detiene la simulación; sin alerta.
                 stopSimulation(true);
             }
 
@@ -2158,17 +2177,9 @@
             ? distanciaTotalMetros / tiempoTranscurridoMinutosActual
             : 0;
 
-        if (velocidadMediaRealActual <= CONFIG.SPEED_STOP_THRESHOLD) {
-            localStorage.setItem('sim_is_active', 'false');
-            updateUIState('stopped');
-
-            horaLlegadaObj = new Date(horaInicioObj.getTime() + (tiempoTotalSegundos * 1000));
-            safeSetTextById('tiempoTotal', formatDuration(tiempoTotalSegundos));
-            safeSetTextById('horaLlegada', formatArrivalTime(horaLlegadaObj));
-            safeSetTextById('tiempoActual', formatDuration(tiempoTranscurrido));
-            safeSetTextById('distanciaRecorrida', distanciaTotalKm.toLocaleString());
-
-            if(airplaneMarker && puntoB_Coords) airplaneMarker.setLatLng(puntoB_Coords);
+        // Si el vuelo ya alcanzó la velocidad configurada, finalizar sin reiniciar.
+        if (tiempoTranscurrido >= tiempoTotalSegundos) {
+            finalizarSimulacionAutomatica();
             return;
         }
 
@@ -2191,6 +2202,13 @@
         const distanciaTotalMetros = distanciaTotalKm * 1000;
         const velocidadMediaM_min = parseFloat(document.getElementById('velocidad').value);
         const velocidadM_seg = velocidadMediaM_min / 60;
+
+        // La velocidad real es distancia total / tiempo desde la suelta.
+        // Al llegar a la velocidad objetivo, el vuelo ha terminado.
+        if (tiempoTranscurrido >= tiempoTotalSegundos) {
+            finalizarSimulacionAutomatica();
+            return;
+        }
 
         const speedBadge = document.getElementById('realSpeedBadge');
 
@@ -2215,6 +2233,24 @@
         safeSetTextById('realSpeedBadge', `${(velocidadMostrada).toFixed(2)} m/min`);
         safeSetTextById('tiempoActual', formatDuration(tiempoTranscurrido));
         safeSetTextById('distanciaRecorrida', distanciaRecorridaKm);
+    }
+
+    function finalizarSimulacionAutomatica() {
+        if (intervalId) clearInterval(intervalId);
+        intervalId = null;
+        localStorage.setItem('sim_is_active', 'false');
+        tiempoTranscurrido = tiempoTotalSegundos;
+        horaLlegadaObj = new Date(horaInicioObj.getTime() + tiempoTotalSegundos * 1000);
+        safeSetTextById('realSpeedBadge', `${parseFloat(document.getElementById('velocidad').value).toFixed(2)} m/min`);
+        safeSetTextById('tiempoTotal', formatDuration(tiempoTotalSegundos));
+        safeSetTextById('horaLlegada', formatArrivalTime(horaLlegadaObj));
+        safeSetTextById('tiempoActual', formatDuration(tiempoTotalSegundos));
+        safeSetTextById('distanciaRecorrida', distanciaTotalKm.toFixed(2));
+        if (usePositionSimulation && airplaneMarker && puntoB_Coords) {
+            airplaneMarker.setLatLng(puntoB_Coords);
+            if (map) map.panTo(puntoB_Coords, {animate: false});
+        }
+        updateUIState('stopped');
     }
 
     // ================================================================
